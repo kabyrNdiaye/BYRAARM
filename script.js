@@ -136,139 +136,73 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================
-// CONTACT FORM HANDLING
+// CONTACT FORM HANDLING (SIMPLE AVEC WEB3FORMS)
 // ============================================
 
-// Initialize EmailJS when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof emailjs !== 'undefined') {
-        // Remplacez "YOUR_PUBLIC_KEY" par votre clé publique EmailJS
-        // Obtenez-la sur https://dashboard.emailjs.com/admin/integration
-        emailjs.init("YOUR_PUBLIC_KEY");
-    }
-});
+    const contactForm = document.getElementById('contactForm');
 
-const contactForm = document.getElementById('contactForm');
+    contactForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        // Récupère les valeurs du formulaire
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const phone = document.getElementById('phone').value;
+        const message = document.getElementById('message').value;
 
-contactForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    // Get form values
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const phone = document.getElementById('phone').value;
-    const message = document.getElementById('message').value;
+        // Bouton en mode "chargement"
+        const submitButton = contactForm.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Envoi en cours...';
 
-    // Show loading state
-    const submitButton = contactForm.querySelector('button[type="submit"]');
-    const originalText = submitButton.textContent;
-    submitButton.disabled = true;
-    submitButton.textContent = 'Envoi en cours...';
+        // Ta clé Web3Forms (remplace par la tienne !)
+        const web3formsAccessKey = 'c8271f83-7448-4dc3-9429-c6c21ac55284';  // Colle ta clé ici !
 
-    // Solution: Utiliser Web3Forms (gratuit, fonctionne même en local)
-    // IMPORTANT: Obtenez votre clé API gratuite sur https://web3forms.com
-    // C'est gratuit, sans limite, et fonctionne immédiatement !
-    const web3formsAccessKey = 'YOUR_WEB3FORMS_ACCESS_KEY';
-    
-    if (web3formsAccessKey !== 'YOUR_WEB3FORMS_ACCESS_KEY') {
-        // Utiliser Web3Forms
-        sendViaWeb3Forms(web3formsAccessKey, name, email, phone, message, submitButton, originalText);
-        return;
-    }
-    
-    // Si Web3Forms n'est pas configuré, afficher un message avec instructions
-    showNotification('⚠️ Configuration requise: Allez sur web3forms.com, obtenez une clé API gratuite (2 minutes), et mettez-la dans script.js ligne 179. Voir INSTRUCTIONS_RAPIDES.md', 'error');
-    submitButton.disabled = false;
-    submitButton.textContent = originalText;
-});
-
-// Fonction pour envoyer via Web3Forms (RECOMMANDÉ - Plus simple)
-function sendViaWeb3Forms(accessKey, name, email, phone, message, submitButton, originalText) {
-    const formData = {
-        access_key: accessKey,
-        name: name,
-        email: email,
-        phone: phone,
-        message: message,
-        subject: 'Nouveau message depuis BYFAARM - ' + name,
-        from_name: name,
-        to_email: 'byfaag@gmail.com'
-    };
-
-    fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(async (response) => {
-        const json = await response.json();
-        if (response.ok && json.success) {
-            showNotification('Message envoyé avec succès! Nous vous répondrons bientôt.', 'success');
-            document.getElementById('contactForm').reset();
-        } else {
-            throw new Error(json.message || 'Erreur lors de l\'envoi');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Erreur lors de l\'envoi. Veuillez vérifier votre configuration Web3Forms ou nous contacter directement à byfaag@gmail.com', 'error');
-    })
-    .finally(() => {
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
-    });
-}
-
-// Fonction pour envoyer via Formspree
-function sendViaFormspree(endpoint, name, email, phone, message, submitButton, originalText) {
-    fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({
+        // Données à envoyer
+        const formData = {
+            access_key: web3formsAccessKey,
             name: name,
             email: email,
             phone: phone,
             message: message,
-            _replyto: email,
-            _subject: 'Nouveau message depuis BYFAARM - ' + name
+            subject: 'Nouveau message depuis BYFAARM - ' + name,  // Sujet de l'email
+            from_name: name,
+            to_email: 'byfaaf@gmail.com'  // L'adresse où tu veux recevoir les mails
+        };
+
+        // Envoi via Web3Forms
+        fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData)
         })
-    })
-    .then(response => {
-        if (response.ok) {
-            showNotification('Message envoyé avec succès! Nous vous répondrons bientôt.', 'success');
-            document.getElementById('contactForm').reset();
-        } else {
-            throw new Error('Erreur lors de l\'envoi');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Erreur lors de l\'envoi. Veuillez vérifier votre configuration Formspree ou nous contacter directement à byfaag@gmail.com', 'error');
-    })
-    .finally(() => {
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
+        .then(async (response) => {
+            const json = await response.json();
+            if (response.ok && json.success) {
+                showNotification('Message envoyé avec succès ! Nous vous répondrons bientôt.', 'success');
+                contactForm.reset();  // Vide le formulaire
+            } else {
+                throw new Error(json.message || 'Erreur lors de l\'envoi');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showNotification('Erreur lors de l\'envoi. Essayez de nous contacter directement à byfaaf@gmail.com', 'error');
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+        });
     });
-}
+});
 
-// La fonction mailto a été supprimée - les emails doivent être envoyés directement via Web3Forms ou Formspree
-// sans ouvrir le client email de l'utilisateur. Voir CONFIGURATION_WEB3FORMS.md pour la configuration.
-
-// Notification function
+// Fonction pour afficher les notifications (déjà dans ton code, je la garde)
 function showNotification(message, type = 'success') {
-    // Remove existing notification if any
-    const existingNotification = document.querySelector('.notification');
-    if (existingNotification) {
-        existingNotification.remove();
-    }
-
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.innerHTML = `
@@ -277,64 +211,24 @@ function showNotification(message, type = 'success') {
             <span>${message}</span>
         </div>
     `;
-
-    // Add styles
     notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        background: ${type === 'success' ? '#28a745' : '#dc3545'};
-        color: white;
-        padding: 15px 25px;
-        border-radius: 10px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        z-index: 10000;
-        animation: slideInRight 0.3s ease;
-        max-width: 400px;
+        position: fixed; top: 100px; right: 20px; background: ${type === 'success' ? '#28a745' : '#dc3545'};
+        color: white; padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        z-index: 10000; animation: slideInRight 0.3s ease; max-width: 400px;
     `;
-
     document.body.appendChild(notification);
 
-    // Remove after 5 seconds
     setTimeout(() => {
         notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
+        setTimeout(() => notification.remove(), 300);
     }, 5000);
 }
 
-// Add notification animations to CSS dynamically
+// Ajoute ces animations CSS si elles ne sont pas déjà dans ton styles.css
 const style = document.createElement('style');
 style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-    .notification-content {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .notification-content i {
-        font-size: 1.2rem;
-    }
+    @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
 `;
 document.head.appendChild(style);
 
