@@ -139,28 +139,126 @@ document.addEventListener('DOMContentLoaded', () => {
 // CONTACT FORM HANDLING
 // ============================================
 
+// Initialize EmailJS when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof emailjs !== 'undefined') {
+        // Remplacez "YOUR_PUBLIC_KEY" par votre clé publique EmailJS
+        // Obtenez-la sur https://dashboard.emailjs.com/admin/integration
+        emailjs.init("YOUR_PUBLIC_KEY");
+    }
+});
+
 const contactForm = document.getElementById('contactForm');
 
 contactForm.addEventListener('submit', (e) => {
     e.preventDefault();
     
     // Get form values
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('phone').value;
+    const message = document.getElementById('message').value;
+
+    // Show loading state
+    const submitButton = contactForm.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = 'Envoi en cours...';
+
+    // Solution: Utiliser Web3Forms (gratuit, fonctionne même en local)
+    // IMPORTANT: Obtenez votre clé API gratuite sur https://web3forms.com
+    // C'est gratuit, sans limite, et fonctionne immédiatement !
+    const web3formsAccessKey = 'YOUR_WEB3FORMS_ACCESS_KEY';
+    
+    if (web3formsAccessKey !== 'YOUR_WEB3FORMS_ACCESS_KEY') {
+        // Utiliser Web3Forms
+        sendViaWeb3Forms(web3formsAccessKey, name, email, phone, message, submitButton, originalText);
+        return;
+    }
+    
+    // Si Web3Forms n'est pas configuré, afficher un message avec instructions
+    showNotification('⚠️ Configuration requise: Allez sur web3forms.com, obtenez une clé API gratuite (2 minutes), et mettez-la dans script.js ligne 179. Voir INSTRUCTIONS_RAPIDES.md', 'error');
+    submitButton.disabled = false;
+    submitButton.textContent = originalText;
+});
+
+// Fonction pour envoyer via Web3Forms (RECOMMANDÉ - Plus simple)
+function sendViaWeb3Forms(accessKey, name, email, phone, message, submitButton, originalText) {
     const formData = {
-        name: document.getElementById('name').value,
-        email: document.getElementById('email').value,
-        phone: document.getElementById('phone').value,
-        message: document.getElementById('message').value
+        access_key: accessKey,
+        name: name,
+        email: email,
+        phone: phone,
+        message: message,
+        subject: 'Nouveau message depuis BYFAARM - ' + name,
+        from_name: name,
+        to_email: 'byfaag@gmail.com'
     };
 
-    // Simulate form submission (replace with actual API call)
-    console.log('Form submitted:', formData);
-    
-    // Show success message
-    showNotification('Message envoyé avec succès! Nous vous répondrons bientôt.', 'success');
-    
-    // Reset form
-    contactForm.reset();
-});
+    fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async (response) => {
+        const json = await response.json();
+        if (response.ok && json.success) {
+            showNotification('Message envoyé avec succès! Nous vous répondrons bientôt.', 'success');
+            document.getElementById('contactForm').reset();
+        } else {
+            throw new Error(json.message || 'Erreur lors de l\'envoi');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Erreur lors de l\'envoi. Veuillez vérifier votre configuration Web3Forms ou nous contacter directement à byfaag@gmail.com', 'error');
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+    });
+}
+
+// Fonction pour envoyer via Formspree
+function sendViaFormspree(endpoint, name, email, phone, message, submitButton, originalText) {
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            name: name,
+            email: email,
+            phone: phone,
+            message: message,
+            _replyto: email,
+            _subject: 'Nouveau message depuis BYFAARM - ' + name
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            showNotification('Message envoyé avec succès! Nous vous répondrons bientôt.', 'success');
+            document.getElementById('contactForm').reset();
+        } else {
+            throw new Error('Erreur lors de l\'envoi');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Erreur lors de l\'envoi. Veuillez vérifier votre configuration Formspree ou nous contacter directement à byfaag@gmail.com', 'error');
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+    });
+}
+
+// La fonction mailto a été supprimée - les emails doivent être envoyés directement via Web3Forms ou Formspree
+// sans ouvrir le client email de l'utilisateur. Voir CONFIGURATION_WEB3FORMS.md pour la configuration.
 
 // Notification function
 function showNotification(message, type = 'success') {
